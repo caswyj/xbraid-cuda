@@ -34,10 +34,12 @@ include ../makefile.inc
 # Build exmaples 
 ##################################################################
 
-HYPRE_DIR = ../../hypre/src/hypre
+HYPRE_DIR = /home/wangyj/soft/hypre-install
 HYPRE_FLAGS = -I$(HYPRE_DIR)/include
 HYPRE_LIB = -L$(HYPRE_DIR)/lib -lHYPRE
 HYPRE_LIB_FILE = $(HYPRE_DIR)/lib/libHYPRE.a
+$(info HYPRE_DIR=$(HYPRE_DIR))
+$(info HYPRE_LIB_FILE=$(HYPRE_LIB_FILE))
 
 MFEM_DIR = ../../mfem
 MFEM_CONFIG_MK = $(MFEM_DIR)/config/config.mk
@@ -47,10 +49,15 @@ MFEM_LIB_FILE = mfem_is_not_built
 BRAID_FLAGS = -I$(BRAID_DIR)
 BRAID_LIB_FILE = $(BRAID_DIR)/libbraid.a
 
+# CUDA flags
+CUDA_FLAGS = -I/usr/local/cuda/include
+CUDA_LIBS = -L/usr/local/cuda/lib64 -lcudart
+
 C_NOHYPRE = ex-01 ex-01-adjoint ex-01-optimization ex-01-refinement ex-01-expanded ex-01-expanded-bdf2 ex-02 ex-04 ex-04-serial ex-06 ex-07
 CPP_NOHYPRE = ex-01-pp 
 F_NOHYPRE = ex-01-expanded-f
 C_EXAMPLES = ex-03 ex-03-serial
+C_CUDA_EXAMPLES = ex-01-cuda
 # Note: .cpp examples will be linked with mfem
 #CXX_EXAMPLES = ex-04
 
@@ -60,7 +67,7 @@ C_EXAMPLES = ex-03 ex-03-serial
 .SUFFIXES: .c .cpp
 
 # put this rule first so it becomes the default
-all: $(C_NOHYPRE) $(CPP_NOHYPRE) $(C_EXAMPLES) $(CXX_EXAMPLES)
+all: $(C_NOHYPRE) $(CPP_NOHYPRE) $(C_EXAMPLES) $(C_CUDA_EXAMPLES) $(CXX_EXAMPLES)
 
 # Rule for building ex-01
 ex-01: ex-01.c $(BRAID_LIB_FILE)
@@ -144,6 +151,11 @@ ex-07: ex-07.c $(BRAID_LIB_FILE)
 	@echo "Building" $@ "..."
 	$(MPICC) $(CFLAGS) $(BRAID_FLAGS) $(@).c -o $@ $(BRAID_LIB_FILE) $(LFLAGS)
 
+# Rule for building ex-01-cuda (CUDA version)
+ex-01-cuda: ex-01-cuda.c $(BRAID_LIB_FILE) ../cuda/libcudabraid.a
+	@echo "Building" $@ "..."
+	$(MPICC) $(CFLAGS) $(BRAID_FLAGS) $(CUDA_FLAGS) $(@).c -o $@ $(BRAID_LIB_FILE) ../cuda/libcudabraid.a $(LFLAGS) $(CUDA_LIBS)
+
 # Rule for compiling .c files
 %: %.c $(BRAID_LIB_FILE)
 	@echo "Building" $@ "..."
@@ -165,7 +177,7 @@ $(HYPRE_LIB_FILE):
 	$(error The Hypre library is not built, unable to build ex-03)
 
 clean: cleanout
-	rm -f *.o $(C_NOHYPRE) $(CPP_NOHYPRE) $(F_NOHYPRE) $(C_EXAMPLES) $(CXX_EXAMPLES) $(F_EXAMPLES) *ror_norm* *_err_* *_mesh* *_sol_*
+	rm -f *.o $(C_NOHYPRE) $(CPP_NOHYPRE) $(F_NOHYPRE) $(C_EXAMPLES) $(C_CUDA_EXAMPLES) $(CXX_EXAMPLES) $(F_EXAMPLES) *ror_norm* *_err_* *_mesh* *_sol_*
 	rm -rf *.dSYM
 
 cleanout:
