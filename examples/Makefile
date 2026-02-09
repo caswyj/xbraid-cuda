@@ -53,11 +53,11 @@ BRAID_LIB_FILE = $(BRAID_DIR)/libbraid.a
 CUDA_FLAGS = -I/usr/local/cuda/include
 CUDA_LIBS = -L/usr/local/cuda/lib64 -lcudart
 
-C_NOHYPRE = ex-01 ex-01-adjoint ex-01-optimization ex-01-refinement ex-01-expanded ex-01-expanded-bdf2 ex-02 ex-04 ex-04-serial ex-06 ex-07
-CPP_NOHYPRE = ex-01-pp 
+C_NOHYPRE = ex-01 ex-01-adjoint ex-01-optimization ex-01-refinement ex-01-expanded ex-01-expanded-bdf2 ex-02 ex-04 ex-04-serial ex-06 ex-07 ex-large
+CPP_NOHYPRE = ex-01-pp
 F_NOHYPRE = ex-01-expanded-f
 C_EXAMPLES = ex-03 ex-03-serial
-C_CUDA_EXAMPLES = ex-01-cuda
+C_CUDA_EXAMPLES = ex-01-cuda ex-large-cuda
 # Note: .cpp examples will be linked with mfem
 #CXX_EXAMPLES = ex-04
 
@@ -151,10 +151,21 @@ ex-07: ex-07.c $(BRAID_LIB_FILE)
 	@echo "Building" $@ "..."
 	$(MPICC) $(CFLAGS) $(BRAID_FLAGS) $(@).c -o $@ $(BRAID_LIB_FILE) $(LFLAGS)
 
+# Rule for building ex-large (large 1D heat equation - CPU version)
+ex-large: ex-large.c $(BRAID_LIB_FILE) ex-02-lib.c
+	@echo "Building" $@ "..."
+	$(MPICC) $(CFLAGS) $(BRAID_FLAGS) $(@).c -o $@ $(BRAID_LIB_FILE) $(LFLAGS)
+
 # Rule for building ex-01-cuda (CUDA version)
 ex-01-cuda: ex-01-cuda.c $(BRAID_LIB_FILE) ../cuda/libcudabraid.a
 	@echo "Building" $@ "..."
 	$(MPICC) $(CFLAGS) $(BRAID_FLAGS) $(CUDA_FLAGS) $(@).c -o $@ $(BRAID_LIB_FILE) ../cuda/libcudabraid.a $(LFLAGS) $(CUDA_LIBS)
+
+# Rule for building ex-large-cuda (CUDA version of large example)
+ex-large-cuda: ex-large-cuda.cu $(BRAID_LIB_FILE) ../cuda/libcudabraid.a
+	@echo "Building" $@ "..."
+	nvcc -c $(CUDA_FLAGS) $(BRAID_FLAGS) ex-large-cuda.cu -o ex-large-cuda.o
+	mpicxx ex-large-cuda.o $(BRAID_LIB_FILE) ../cuda/libcudabraid.a -o $@ $(LFLAGS) $(CUDA_LIBS)
 
 # Rule for compiling .c files
 %: %.c $(BRAID_LIB_FILE)
